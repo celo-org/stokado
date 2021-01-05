@@ -1,0 +1,255 @@
+service: stokado
+
+provider:
+  name: aws
+  stage: dev
+  runtime: nodejs12.x
+  region: eu-west-1
+  memorySize: 128
+  environment:
+    BUCKET_NAME: !Ref StorageBucket
+    CDN_DISTRIBUTION_ID: ${self:resources.Outputs.CloudFrontDistributionId.Value}
+  apiGateway:
+    shouldStartNameWithService: true
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:PutObjectAcl
+      Resource:
+        - Fn::Join:
+            - ""
+            - - !GetAtt StorageBucket.Arn
+              - "/*"
+    - Effect: Allow
+      Action:
+        - cloudfront:CreateInvalidation
+      Resource:
+        - Fn::Join:
+          - "/"
+          - - Fn::Join:
+              - ":"
+              - - "arn:aws:cloudfront:"
+                - !Ref "AWS::AccountId"
+                - distribution
+            - !Ref CloudFrontDistribution
+
+frameworkVersion: '2'
+
+plugins:
+  - serverless-webpack
+  - serverless-layers
+
+package:
+  individually: true
+  excludeDevDependencies: false
+  exclude:
+    - "**/*"
+    - node_modules/**
+
+functions:
+  authorize:
+    memorySize: ${self:custom.parameters.authorize.memorySize}
+    timeout: ${self:custom.parameters.authorize.timeout}
+    handler: src/authorize/handler.handle
+    events:
+      - http:
+          path: authorize
+          method: POST
+    environment:
+      AUTHORIZATION_EXPIRES_IN: 300000 # 5 minutes
+    package:
+      include:
+        - src/authorize/**
+  flush:
+    memorySize: ${self:custom.parameters.flush.memorySize}
+    timeout: ${self:custom.parameters.flush.timeout}
+    handler: src/flush/handler.handle
+    events:
+      - sqs:
+          arn: !GetAtt FileUpdatesQueue.Arn
+          batchSize: ${self:custom.parameters.flush.batchSize}
+          maximumBatchingWindow: ${self:custom.parameters.flush.batchingWindow}
+    package:
+      include:
+        - src/flush/**
+
+resources:
+  Resources:
+    StorageBucket:
+      Type: AWS::S3::Bucket
+      DependsOn:
+        - FileUpdatesQueue
+      DeletionPolicy: Retain
+      Metadata:
+        Comment: 'Secure metadata storage'
+      Properties:
+        AccessControl: Private
+        BucketName: ${self:service}-storage-${self:custom.stage}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedMethods:
+                - POST
+                - GET
+              AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+        NotificationConfiguration:
+          QueueConfigurations:
+            - Event: s3:ObjectCreated:*
+              Queue: !GetAtt FileUpdatesQueue.Arn
+            - Event: s3:ObjectRemoved:*
+              Queue: !GetAtt FileUpdatesQueue.Arn
+        Tags: ${self:custom.tags}
+
+    StorageBucketAllowPublicReadPolicy:
+      Type: AWS::S3::BucketPolicy
+      Metadata:
+        Comment: 'Bucket policy to allow CloudFront to access the data'
+      Properties:
+        Bucket: !Ref StorageBucket
+        PolicyDocument:
+          Statement:
+            - Action:
+                - 's3:GetObject'
+              Effect: 'Allow'
+              Principal:
+                CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+              Resource:
+                - !Sub 'arn:aws:s3:::${StorageBucket}/*'
+
+    CloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Metadata:
+        Comment: 'Stokado service CloudFront distribution'
+      Properties: 
+        DistributionConfig:
+          DefaultCacheBehavior:
+            AllowedMethods:
+              - 'HEAD'
+              - 'GET'
+            CachedMethods:
+              - 'HEAD'
+              - 'GET'
+            Compress: false
+            DefaultTTL: 86400
+            ForwardedValues:
+              Cookies:
+                Forward: 'none'
+              Headers:
+                - 'Origin'
+              QueryString: false
+            MaxTTL: 31536000
+            MinTTL: 86400
+            TargetOriginId: !Sub 's3-origin-${StorageBucket}'
+            ViewerProtocolPolicy: 'redirect-to-https'
+          DefaultRootObject: 'index.html'
+          Enabled: true
+          HttpVersion: 'http1.1'
+          IPV6Enabled: false
+          Origins:
+            - DomainName: !GetAtt StorageBucket.DomainName
+              Id: !Sub 's3-origin-${StorageBucket}'
+              OriginPath: ''
+              S3OriginConfig:
+                OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+          PriceClass: 'PriceClass_All'
+        Tags: ${self:custom.tags}
+
+    CloudFrontOriginAccessIdentity:
+      Metadata:
+        Comment: 'Access S3 bucket content only through CloudFront'
+      Properties:
+        CloudFrontOriginAccessIdentityConfig:
+          Comment: 'Access S3 bucket content only through CloudFront'
+      Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+
+    FileUpdatesQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName:
+          Fn::Join:
+            - "-"
+            - - FileUpdatesQueue
+              - ${self:custom.stage}
+              - ${self:custom.region}
+        MessageRetentionPeriod: 14400
+        VisibilityTimeout: ${self:custom.timeouts.fileUpdatesVisibility}
+        RedrivePolicy:
+          deadLetterTargetArn: !GetAtt FileUpdatesQueueDLQ.Arn
+          maxReceiveCount: 5
+        Tags: ${self:custom.tags}
+
+    FileUpdatesQueueDLQ:
+      Type: AWS::SQS::Queue
+      Properties:
+        MessageRetentionPeriod: 345600
+        QueueName:
+          Fn::Join:
+            - "-"
+            - - FileUpdatesQueueDLQ
+              - ${self:custom.stage}
+              - ${self:custom.region}
+        Tags: ${self:custom.tags}
+
+    FileUpdatesQueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal: "*"
+              Action:
+                - sqs:SendMessage
+              Resource: "*"
+              Condition:
+                ArnEquals:
+                  "aws:SourceArn": !Sub "arn:aws:s3:::${StorageBucket}"
+        Queues:
+          - !Ref FileUpdatesQueue
+
+  Outputs:
+    StorageBucketName:
+      Description: 'Bucket name'
+      Value: !Ref StorageBucket
+    CloudFrontDistributionId:
+      Description: 'Id for the CloudFront distribution'
+      Value: !Ref CloudFrontDistribution
+    CloudFrontDistributionDomainName:
+      Description: 'Domain name for the CloudFront distribution'
+      Value: !GetAtt CloudFrontDistribution.DomainName
+
+custom:
+  stage: ${opt:stage, env:STAGE, self:provider.stage}
+  region: ${opt:region, self:provider.region}
+  tags:
+    - Key: app
+      Value: ${self:service}
+    - Key: environment
+      Value: ${self:custom.stage}
+  timeouts:
+    fileUpdatesVisibility: 30 # this should be always greater than the flush function timeout
+  parameters:
+    auth:
+      memorySize: 256
+      timeout: 5
+      authCacheTtl: 30
+    authorize:
+      memorySize: 256
+      timeout: 5
+    flush:
+      memorySize: 256
+      timeout: 5
+      batchSize: 1000
+      batchingWindow: 30
+  webpack:
+    includeModules: false
+  serverless-layers:
+    functions:
+      - authorize
+      - flush
+    dependenciesPath: ./package.json
+    packageManager: yarn
+    layersDeploymentBucket: stokado-layers

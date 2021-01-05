@@ -1,0 +1,62 @@
+name: Build
+
+on: [pull_request]
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+            node-version: '10.x'
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+      - name: Restore stokado cache
+        id: restore-stokado
+        uses: bowd/cache@v3
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-stokado-deps-${{ hashFiles('./yarn.lock') }}
+          only-check-key: true
+      - name: Restore yarn cache
+        uses: bowd/cache@v3
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-stokado-yarn-cache-${{ hashFiles('./yarn.lock') }}
+        if: steps.restore-stokado.outputs.cache-hit != 'true'
+      - name: Install stokado dependencies
+        run: |
+          yarn
+        if: steps.restore-stokado.outputs.cache-hit != 'true'
+
+  test:
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+            node-version: '10.x'
+      - name: Restore stokado cache
+        id: restore-stokado
+        uses: bowd/cache@v3
+        with:
+          path: |
+            node_modules
+          key: ${{ runner.os }}-stokado-deps-${{ hashFiles('yarn.lock') }}
+      - name: Exit if caches not found
+        run: exit 1
+        if: steps.restore-stokado.outputs.cache-hit != 'true'
+      - name: Run linters
+        run: |
+            yarn lint
+      - name: Run unit tests
+        run: |
+            yarn test:cov
+      - name: Run integration tests
+        run: |
+            yarn test:e2e

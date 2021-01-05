@@ -1,0 +1,14 @@
+# all logs
+*.log
+
+# package directories
+node_modules
+
+# Serverless directories
+.serverless
+
+# Webpack directories
+.webpack
+
+# test coverage
+coverage/
