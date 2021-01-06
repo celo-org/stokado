@@ -57,6 +57,3 @@ jobs:
       - name: Run unit tests
         run: |
             yarn test:cov
-      - name: Run integration tests
-        run: |
-            yarn test:e2e

@@ -6942,7 +6942,7 @@ lodash.union@^4.6.0:
   resolved "https://registry.yarnpkg.com/lodash.union/-/lodash.union-4.6.0.tgz#48bb5088409f16f1821666641c44dd1aaae3cd88"
   integrity sha1-SLtQiECfFvGCFmZkHETdGqrjzYg=
 
-lodash@4.17.x, lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.20, lodash@^4.17.4:
+lodash@4.17.x, lodash@^4.17.10, lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.20, lodash@^4.17.4:
   version "4.17.20"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.20.tgz#b44a9b6297bcb698f1c51a3545a2b3b368d59c52"
   integrity sha512-PlhdFcillOINfeV7Ni6oF1TAEayyZBoZ8bcshTHqOYJYlrqzRK5hagpagky5o4HfCzzd1TRkXPMFq6cKk9rGmA==
@@ -8939,6 +8939,13 @@ serverless-layers@^2.3.3:
     semver "^7.3.2"
     slugify "^1.4.0"
 
+serverless-plugin-aws-alerts@^1.6.1:
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/serverless-plugin-aws-alerts/-/serverless-plugin-aws-alerts-1.6.1.tgz#433e0e781c6c49b29cb61f18bd72522beb06681e"
+  integrity sha512-ylw60cZkjDFtTR08eEKcIU5CHK0PD8TLmTERZ0V4Aoo7cDqT/a9Lr4Ke9U2yBabxrRRqCg1zzZ9QqtQL99YlZA==
+  dependencies:
+    lodash "^4.17.10"
+
 serverless-plugin-typescript@^1.1.9:
   version "1.1.9"
   resolved "https://registry.yarnpkg.com/serverless-plugin-typescript/-/serverless-plugin-typescript-1.1.9.tgz#75348a93f3f5dae19aad7006d51a545618892028"
@@ -8947,6 +8954,13 @@ serverless-plugin-typescript@^1.1.9:
     fs-extra "^7.0.1"
     globby "^9.2.0"
     lodash "^4.17.11"
+
+serverless-sqs-alarms-plugin@^0.1.7:
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/serverless-sqs-alarms-plugin/-/serverless-sqs-alarms-plugin-0.1.7.tgz#d9858897cd2ba05cf89bc8f3909a01ed0668f591"
+  integrity sha1-2YWIl80roFz4m8jzkJoB7QZo9ZE=
+  dependencies:
+    lodash "^4.17.4"
 
 serverless-webpack@^5.3.5:
   version "5.3.5"

@@ -36,10 +36,11 @@ describe('authorizer', () => {
 
   it('returns error if one of the paths is unknown', async () => {
     const result = await authorizer.authorize(
-      '[{"path": "/account/name"},{"path":"/something/random"}]',
+      '[{"path":"/something/random"},{"path": "/account/name"}]',
       expiresInSeconds,
       signer
     )
+
     expect(result.ok).toBe(false)
     if (result.ok === false) {
       expect(result.error.errorType).toEqual(AuthorizerErrorTypes.InvalidUploadPath)
@@ -48,10 +49,11 @@ describe('authorizer', () => {
 
   it('returns error if one of the paths is absent', async () => {
     const result = await authorizer.authorize(
-      '[{"path": "/account/name"},{"notpath":"/account/name.signature"}]',
+      '[{"notpath":"/account/name.signature"},{"path": "/account/name"}]',
       expiresInSeconds,
       signer
     )
+
     expect(result.ok).toBe(false)
     if (result.ok === false) {
       expect(result.error.errorType).toEqual(AuthorizerErrorTypes.InvalidUploadPath)
