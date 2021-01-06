@@ -37,6 +37,8 @@ provider:
 frameworkVersion: '2'
 
 plugins:
+  - serverless-plugin-aws-alerts
+  - serverless-sqs-alarms-plugin
   - serverless-webpack
   - serverless-layers
 
@@ -57,7 +59,7 @@ functions:
           path: authorize
           method: POST
     environment:
-      AUTHORIZATION_EXPIRES_IN: 300000 # 5 minutes
+      AUTHORIZATION_EXPIRES_IN: ${self:custom.parameters.authorize.authorizationExpiresIn}
     package:
       include:
         - src/authorize/**
@@ -73,19 +75,24 @@ functions:
     package:
       include:
         - src/flush/**
+    alarms:
+      - name: functionDuration
+        threshold: ${self:custom.parameters.flush.expectedMaxAverageDuration}
 
 resources:
   Resources:
     StorageBucket:
       Type: AWS::S3::Bucket
       DependsOn:
-        - FileUpdatesQueue
-      DeletionPolicy: Retain
+        - FileUpdatesQueuePolicy
+      # Warning: when a stack gets removed, this bucket will NOT be removed as part of it,
+      # so subsequent deployments of the same stack would fail, it has to be removed manually
+      DeletionPolicy: Retain 
       Metadata:
         Comment: 'Secure metadata storage'
       Properties:
         AccessControl: Private
-        BucketName: ${self:service}-storage-${self:custom.stage}
+        BucketName: ${self:custom.parameters.storageBucket.name}
         CorsConfiguration:
           CorsRules:
             - AllowedMethods:
@@ -133,15 +140,15 @@ resources:
               - 'HEAD'
               - 'GET'
             Compress: false
-            DefaultTTL: 86400
+            DefaultTTL: ${self:custom.parameters.cdn.cacheDefaultTtl}
             ForwardedValues:
               Cookies:
                 Forward: 'none'
               Headers:
                 - 'Origin'
               QueryString: false
-            MaxTTL: 31536000
-            MinTTL: 86400
+            MaxTTL: ${self:custom.parameters.cdn.cacheMaxTtl}
+            MinTTL: ${self:custom.parameters.cdn.cacheMinTtl}
             TargetOriginId: !Sub 's3-origin-${StorageBucket}'
             ViewerProtocolPolicy: 'redirect-to-https'
           DefaultRootObject: 'index.html'
@@ -168,29 +175,19 @@ resources:
     FileUpdatesQueue:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName:
-          Fn::Join:
-            - "-"
-            - - FileUpdatesQueue
-              - ${self:custom.stage}
-              - ${self:custom.region}
-        MessageRetentionPeriod: 14400
-        VisibilityTimeout: ${self:custom.timeouts.fileUpdatesVisibility}
+        QueueName: ${self:custom.parameters.queues.fileUpdates.name}
+        MessageRetentionPeriod: ${self:custom.parameters.queues.fileUpdates.messageRetentionPeriod}
+        VisibilityTimeout: ${self:custom.parameters.queues.fileUpdates.visibilityTimeout}
         RedrivePolicy:
           deadLetterTargetArn: !GetAtt FileUpdatesQueueDLQ.Arn
-          maxReceiveCount: 5
+          maxReceiveCount: ${self:custom.parameters.queues.fileUpdates.maxReceiveCount}
         Tags: ${self:custom.tags}
 
     FileUpdatesQueueDLQ:
       Type: AWS::SQS::Queue
       Properties:
-        MessageRetentionPeriod: 345600
-        QueueName:
-          Fn::Join:
-            - "-"
-            - - FileUpdatesQueueDLQ
-              - ${self:custom.stage}
-              - ${self:custom.region}
+        MessageRetentionPeriod: ${self:custom.parameters.queues.fileUpdates.dlqMessageRetentionPeriod}
+        QueueName: ${self:custom.parameters.queues.fileUpdates.dlqName}
         Tags: ${self:custom.tags}
 
     FileUpdatesQueuePolicy:
@@ -206,7 +203,11 @@ resources:
               Resource: "*"
               Condition:
                 ArnEquals:
-                  "aws:SourceArn": !Sub "arn:aws:s3:::${StorageBucket}"
+                  "aws:SourceArn":
+                    Fn::Join:
+                      - ""
+                      - - "arn:aws:s3:::"
+                        - ${self:custom.parameters.storageBucket.name} # predefined bucket name allows to get rid of the circular dependency bucket <> policy
         Queues:
           - !Ref FileUpdatesQueue
 
@@ -229,21 +230,34 @@ custom:
       Value: ${self:service}
     - Key: environment
       Value: ${self:custom.stage}
-  timeouts:
-    fileUpdatesVisibility: 30 # this should be always greater than the flush function timeout
   parameters:
-    auth:
-      memorySize: 256
-      timeout: 5
-      authCacheTtl: 30
     authorize:
       memorySize: 256
       timeout: 5
+      authorizationExpiresIn: 300000 # 5 minutes
     flush:
       memorySize: 256
       timeout: 5
       batchSize: 1000
       batchingWindow: 30
+      expectedMaxAverageDuration: 2000 # 2 seconds
+    cdn:
+      cacheDefaultTtl: 86400 # 1 day
+      cacheMinTtl: 86400 # 1 day
+      cacheMaxTtl: 31536000 # 1 year
+    queues:
+      fileUpdates:
+        name: FileUpdatesQueue-${self:custom.stage}-${self:custom.region}
+        dlqName: FileUpdatesQueueDLQ-${self:custom.stage}-${self:custom.region}
+        visibilityTimeout: 30 # this should be always greater than the flush function timeout
+        maxReceiveCount: 5
+        messageRetentionPeriod: 14400 # 4 hours
+        dlqMessageRetentionPeriod: 345600 # 4 days
+    storageBucket:
+      name: ${self:service}-storage-${self:custom.stage}
+    monitoring:
+      apiKey: ${opt:monitoringApiKey, 'api-key-missing'}
+      endpoint: https://alert.victorops.com/integrations/cloudwatch/20131130/alert/${self:custom.parameters.monitoring.apiKey}/Web
   webpack:
     includeModules: false
   serverless-layers:
@@ -253,3 +267,51 @@ custom:
     dependenciesPath: ./package.json
     packageManager: yarn
     layersDeploymentBucket: stokado-layers
+  # SQS alarms depend on the SNS topics created in the alerts section below
+  # please note that they are created only for some environments (stages)
+  # for other environments, the SQS alarms will be created but will not trigger
+  # actual alarms
+  sqs-alarms:
+    - queue: ${self:custom.parameters.queues.fileUpdates.name}
+      topic: ${self:service}-${self:custom.stage}-alerts-alarm
+      name: ${self:service}-${self:custom.stage}-high-number-of-messages-alarm
+      thresholds:
+        - 100
+    - queue: ${self:custom.parameters.queues.fileUpdates.dlqName}
+      topic: ${self:service}-${self:custom.stage}-alerts-alarm
+      name: ${self:service}-${self:custom.stage}-high-number-of-dlq-messages-alarm
+      thresholds:
+        - 1
+  alerts:
+    stages:
+      - mainnet
+      - baklava
+      - alfajores
+      - dev
+    dashboards: true
+    nameTemplate: $[functionName]-$[metricName]-alarm
+    prefixTemplate: $[stackName]
+    topics:
+      ok:
+        topic: ${self:service}-${self:custom.stage}-alerts-ok
+        notifications:
+        - protocol: https
+          endpoint: ${self:custom.parameters.monitoring.endpoint}
+      alarm:
+        topic: ${self:service}-${self:custom.stage}-alerts-alarm
+        notifications:
+        - protocol: https
+          endpoint: ${self:custom.parameters.monitoring.endpoint}
+      insufficientData:
+        topic: ${self:service}-${self:custom.stage}-alerts-insufficientData
+        notifications:
+        - protocol: https
+          endpoint: ${self:custom.parameters.monitoring.endpoint}
+    definitions:
+      functionErrors:
+        period: 300
+    alarms:
+      - functionThrottles
+      - functionErrors
+      - functionInvocations
+      - functionDuration

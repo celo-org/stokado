@@ -14,8 +14,8 @@
     "lint": "eslint src/",
     "test": "jest --runInBand --silent",
     "test:watch": "jest --runInBand --watch --silent",
-    "test:cov": "jest --coverage --runInBand --silent",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:cov": "jest --coverage --runInBand",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
     "@celo/base": "^1.0.0-beta3",
@@ -47,7 +47,9 @@
     "prettier": "^2.2.1",
     "serverless": "^2.15.0",
     "serverless-layers": "^2.3.3",
+    "serverless-plugin-aws-alerts": "^1.6.1",
     "serverless-plugin-typescript": "^1.1.9",
+    "serverless-sqs-alarms-plugin": "^0.1.7",
     "serverless-webpack": "^5.3.5",
     "ts-jest": "^26.4.4",
     "ts-loader": "^8.0.12",
