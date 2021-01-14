@@ -5,6 +5,7 @@
   "author": "Celo",
   "license": "Apache-2.0",
   "scripts": {
+    "deploy:layers": "./scripts/create-layers-bucket.sh",
     "deploy": "serverless deploy",
     "package": "serverless package",
     "invoke": "serverless invoke local",
