@@ -225,6 +225,7 @@ resources:
 custom:
   stage: ${opt:stage, env:STAGE, self:provider.stage}
   region: ${opt:region, self:provider.region}
+  layersDeploymentBucket: ${opt:layersBucket, "stokado-layers-${self:custom.stage}"} # this bucket must exist BEFORE deploying the stack, can be one for many stacks per AWS account
   tags:
     - Key: app
       Value: ${self:service}
@@ -266,7 +267,7 @@ custom:
       - flush
     dependenciesPath: ./package.json
     packageManager: yarn
-    layersDeploymentBucket: stokado-layers
+    layersDeploymentBucket: ${self:custom.layersDeploymentBucket}
   # SQS alarms depend on the SNS topics created in the alerts section below
   # please note that they are created only for some environments (stages)
   # for other environments, the SQS alarms will be created but will not trigger

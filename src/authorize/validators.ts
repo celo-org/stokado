@@ -1,7 +1,7 @@
 import 'source-map-support/register'
 
 export const MAX_NAME_LENGTH = 100
-export const MAX_PICTURE_LENGTH = 10_000
+export const MAX_PICTURE_LENGTH = 50_000
 export const SIGNATURE_SIZE = 65
 export const MIN_CIPHERTEXT_LENGTH = 128
 export const MAX_CIPHERTEXT_LENGTH = 130
