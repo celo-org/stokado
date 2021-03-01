@@ -40,19 +40,30 @@ const handlerFactory = (authorizer: Authorizer, expiresIn: number): APIGatewayPr
       return response(401, 'Signature required')
     }
 
-    let signer = ''
     try {
-      signer = toChecksumAddress(guessSigner(payload, signature))
-      console.debug('Guessed signer is', signer)
-    } catch (e) {
-      return response(403, 'Invalid signature provided')
-    }
+      const { address, data } = JSON.parse(payload)
 
-    try {
-      const signedUrls = await makeAsyncThrowable(authorizer.authorize)(payload, expiresIn, signer)
-      return response(200, JSON.stringify(signedUrls))
+      const claimedSigner = toChecksumAddress(address)
+      const guessedSigner = toChecksumAddress(guessSigner(payload, signature))
+
+      if (claimedSigner !== guessedSigner) {
+        return response(403, 'Invalid signature provided')
+      }
+
+      try {
+        const signedUrls = await makeAsyncThrowable(authorizer.authorize)(
+          data,
+          expiresIn,
+          guessedSigner
+        )
+        return response(200, JSON.stringify(signedUrls))
+      } catch (e) {
+        console.error(e)
+        return response(400, e.errorType)
+      }
     } catch (e) {
-      return response(400, e.errorType)
+      console.debug(e)
+      return response(400, 'Invalid request')
     }
   }
 }

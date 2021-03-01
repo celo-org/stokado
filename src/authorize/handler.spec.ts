@@ -1,17 +1,26 @@
 import { APIGatewayProxyEvent, APIGatewayProxyEventHeaders } from 'aws-lambda'
+import { ContractKit, newKit } from '@celo/contractkit'
+import { privateKeyToPublicKey, publicKeyToAddress } from '@celo/utils/lib/address'
 
 import AWS from 'aws-sdk'
 import AWSMock from 'aws-sdk-mock'
 import { bootstrap } from '@app/authorize/bootstrap'
+import { ensureLeading0x } from '@celo/base'
 import { handle } from '@app/authorize/handler'
 
 describe('authorizer handler', () => {
+  const writerPrivate = '0xdcef435698f5d070035071541c14440fde752ea847d863d88418218f93ad5a1a'
+  const writerPublic = privateKeyToPublicKey(writerPrivate)
+  const writerAddress = publicKeyToAddress(writerPublic)
+  const writerEncryptionKeyPrivate =
+    '0xc029c933337a6a1b08fc75c56dfba605bfbece471c356923ef79056c5f0a2e81'
+  const kit = newKit('https://alfajores-forno.celo-testnet.org')
+  kit.addAccount(writerPrivate)
+  kit.addAccount(writerEncryptionKeyPrivate)
+  kit.defaultAccount = writerAddress
+
   const bucket = 'bucket'
   const expiresInSeconds = 10
-  const payload = '[{"path": "/account/name"}, {"path": "/account/name.signature"}]'
-  const validSignature =
-    '0xf94258ca073c0df9084d78bb11fb58a3a14b0e776dd06e1aa76e3a9b622aa0e51bbe45b84a15fffafeebbcab7cd86ed74f48e64c8758d5dc373abc8477f6922f01'
-  const validSigner = '0x622f9Bf48e17753131dC32151f989BDc13aAA072'
 
   const getHandler = () =>
     bootstrap(
@@ -24,6 +33,11 @@ describe('authorizer handler', () => {
       expiresInSeconds,
       bucket
     )
+
+  const getSignature = async (payload: string, kit: ContractKit) => {
+    const hexPayload = ensureLeading0x(Buffer.from(payload).toString('hex'))
+    return await kit.getWallet().signPersonalMessage(kit.defaultAccount, hexPayload)
+  }
 
   const getEvent = (body: string, headers: APIGatewayProxyEventHeaders): APIGatewayProxyEvent => ({
     headers,
@@ -85,10 +99,36 @@ describe('authorizer handler', () => {
     }
   })
 
-  it('validates signature', async () => {
+  it('handles invalid signature', async () => {
+    const payload = JSON.stringify({
+      address: kit.defaultAccount,
+      data: [{ path: 'foo' }],
+    })
     const handler = getHandler()
-    const event = getEvent('', {
+    const event = getEvent(payload, {
       Signature: 'asdf',
+    })
+    const result = await handler(event, null, null)
+    console.log(result)
+
+    expect(result).not.toBeUndefined()
+
+    if (result) {
+      expect(result.statusCode).toBe(400)
+      expect(result.body).toBe('Invalid request')
+    }
+  })
+
+  it('validates signature', async () => {
+    const payload = JSON.stringify({
+      address: kit.defaultAccount,
+      data: [{ path: 'foo' }],
+    })
+
+    const handler = getHandler()
+    const event = getEvent(payload, {
+      Signature:
+        '0x82e7beb4f72f875fc8f30da40d8d820823736525d001c36307edc3dae54bddca2803231a609e57c5f2c05290db30157da202904b726c08c61c374597abb47c7700',
     })
     const result = await handler(event, null, null)
     console.log(result)
@@ -102,15 +142,20 @@ describe('authorizer handler', () => {
   })
 
   it('handles valid payload', async () => {
+    const payload = JSON.stringify({
+      address: kit.defaultAccount,
+      data: [{ path: '/account/name' }, { path: '/account/name.signature' }],
+    })
+
     AWSMock.setSDKInstance(AWS)
     AWSMock.mock('S3', 'createPresignedPost', (params: AWS.S3.PresignedPost.Params, callback) => {
-      expect(params.Fields.key).toContain(validSigner)
+      expect(params.Fields.key).toContain(kit.defaultAccount)
       callback(null, 'successfulMock')
     })
 
     const handler = getHandler()
     const event = getEvent(payload, {
-      Signature: validSignature,
+      Signature: await getSignature(payload, kit),
     })
 
     const result = await handler(event, null, null)
@@ -124,9 +169,14 @@ describe('authorizer handler', () => {
   })
 
   it('wraps path errors in 400', async () => {
+    const payload = JSON.stringify({
+      address: kit.defaultAccount,
+      data: [{ path: 'foo' }],
+    })
+
     const handler = getHandler()
-    const event = getEvent(JSON.stringify([{ path: 'foo' }]), {
-      Signature: validSignature,
+    const event = getEvent(payload, {
+      Signature: await getSignature(payload, kit),
     })
 
     const result = await handler(event, null, null)

@@ -25,6 +25,10 @@ export class InvalidUploadPathError extends RootError<AuthorizerErrorTypes.Inval
 
 export type AuthorizerError = InvalidPayloadError | InvalidUploadPathError
 
+export interface Path {
+  path: string
+}
+
 export class Authorizer {
   private readonly s3: AWS.S3
   private readonly bucketName: string
@@ -35,17 +39,10 @@ export class Authorizer {
   }
 
   authorize = async (
-    payload: string,
+    items: Path[],
     expires: number,
     signer: string
   ): Promise<Result<AWS.S3.PresignedPost[], AuthorizerError>> => {
-    let items = []
-    try {
-      items = JSON.parse(payload)
-    } catch (e) {
-      return Err(new InvalidPayloadError())
-    }
-
     if (!Array.isArray(items) || items.length === 0) {
       return Err(new InvalidPayloadError())
     }
