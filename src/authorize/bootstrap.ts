@@ -47,6 +47,7 @@ const handlerFactory = (authorizer: Authorizer, expiresIn: number): APIGatewayPr
       const guessedSigner = toChecksumAddress(guessSigner(payload, signature))
 
       if (claimedSigner !== guessedSigner) {
+        console.info(`Guessed signer ${guessedSigner} !== claimed signer ${claimedSigner}`)
         return response(403, 'Invalid signature provided')
       }
 
