@@ -11,15 +11,7 @@ describe('authorizer', () => {
   const authorizer = new Authorizer(s3, bucket)
 
   it('returns error for invalid json payload', async () => {
-    const result = await authorizer.authorize('{bad json', expiresInSeconds, signer)
-    expect(result.ok).toBe(false)
-    if (result.ok === false) {
-      expect(result.error.errorType).toEqual(AuthorizerErrorTypes.InvalidPayload)
-    }
-  })
-
-  it('returns error for non-array payload', async () => {
-    const result = await authorizer.authorize('{}', expiresInSeconds, signer)
+    const result = await authorizer.authorize(null, expiresInSeconds, signer)
     expect(result.ok).toBe(false)
     if (result.ok === false) {
       expect(result.error.errorType).toEqual(AuthorizerErrorTypes.InvalidPayload)
@@ -27,7 +19,7 @@ describe('authorizer', () => {
   })
 
   it('returns error for empty array payload', async () => {
-    const result = await authorizer.authorize('[]', expiresInSeconds, signer)
+    const result = await authorizer.authorize([], expiresInSeconds, signer)
     expect(result.ok).toBe(false)
     if (result.ok === false) {
       expect(result.error.errorType).toEqual(AuthorizerErrorTypes.InvalidPayload)
@@ -36,7 +28,7 @@ describe('authorizer', () => {
 
   it('returns error if one of the paths is unknown', async () => {
     const result = await authorizer.authorize(
-      '[{"path":"/something/random"},{"path": "/account/name"}]',
+      [{ path: '/something/random' }, { path: '/account/name' }],
       expiresInSeconds,
       signer
     )
@@ -48,11 +40,8 @@ describe('authorizer', () => {
   })
 
   it('returns error if one of the paths is absent', async () => {
-    const result = await authorizer.authorize(
-      '[{"notpath":"/account/name.signature"},{"path": "/account/name"}]',
-      expiresInSeconds,
-      signer
-    )
+    const paths = JSON.parse('[{"notpath": "/account/name.signature"}, {"path": "/account/name"}]')
+    const result = await authorizer.authorize(paths, expiresInSeconds, signer)
 
     expect(result.ok).toBe(false)
     if (result.ok === false) {
@@ -76,7 +65,7 @@ describe('authorizer', () => {
     })
 
     const newAuthorizer = new Authorizer(new AWS.S3(), bucket)
-    const result = await newAuthorizer.authorize(`[{"path": "${key}"}]`, expiresInSeconds, signer)
+    const result = await newAuthorizer.authorize([{ path: `${key}` }], expiresInSeconds, signer)
 
     expect(result.ok).toBe(true)
     AWSMock.restore('S3')
