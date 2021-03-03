@@ -1,0 +1,25 @@
+default_env: &default_env
+  withCustomDomain: false
+  baseHostname: "celo-testnet.org"
+  certificateId: "ACM-certificate-identifier"
+  createRoute53Record: false
+
+dev:
+  <<: *default_env
+  certificateId: "c6d0791a-0882-488b-bb3e-c4b4bdd1bd37"
+  withCustomDomain: true
+
+alfajores:
+  <<: *default_env
+  certificateId: "b8b13459-2236-4850-a456-fd57b4ca4b7f"
+  withCustomDomain: true
+
+baklava:
+  <<: *default_env
+  certificateId: "b8b13459-2236-4850-a456-fd57b4ca4b7f"
+  withCustomDomain: true
+
+rc1:
+  <<: *default_env
+  certificateId: "b8b13459-2236-4850-a456-fd57b4ca4b7f"
+  withCustomDomain: true

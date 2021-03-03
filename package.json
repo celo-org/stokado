@@ -5,6 +5,7 @@
   "author": "Celo",
   "license": "Apache-2.0",
   "scripts": {
+    "deploy:domain": "serverless create_domain",
     "deploy:layers": "./scripts/create-layers-bucket.sh",
     "deploy": "serverless deploy",
     "package": "serverless package",
@@ -47,6 +48,7 @@
     "jest": "^26.6.3",
     "prettier": "^2.2.1",
     "serverless": "^2.17.0",
+    "serverless-domain-manager": "^5.1.0",
     "serverless-layers": "^2.3.3",
     "serverless-plugin-aws-alerts": "^1.6.1",
     "serverless-plugin-typescript": "^1.1.9",
