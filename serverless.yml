@@ -6,33 +6,36 @@ provider:
   runtime: nodejs12.x
   region: eu-west-1
   memorySize: 128
+  lambdaHashingVersion: 20201221
   environment:
     BUCKET_NAME: !Ref StorageBucket
     CDN_DISTRIBUTION_ID: ${self:resources.Outputs.CloudFrontDistributionId.Value}
   apiGateway:
     shouldStartNameWithService: true
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - s3:PutObject
-        - s3:PutObjectAcl
-      Resource:
-        - Fn::Join:
-            - ""
-            - - !GetAtt StorageBucket.Arn
-              - "/*"
-    - Effect: Allow
-      Action:
-        - cloudfront:CreateInvalidation
-      Resource:
-        - Fn::Join:
-          - "/"
-          - - Fn::Join:
-              - ":"
-              - - "arn:aws:cloudfront:"
-                - !Ref "AWS::AccountId"
-                - distribution
-            - !Ref CloudFrontDistribution
+  iam:
+    role:
+      statements:
+      - Effect: Allow
+        Action:
+          - s3:PutObject
+          - s3:PutObjectAcl
+        Resource:
+          - Fn::Join:
+              - ""
+              - - !GetAtt StorageBucket.Arn
+                - "/*"
+      - Effect: Allow
+        Action:
+          - cloudfront:CreateInvalidation
+        Resource:
+          - Fn::Join:
+            - "/"
+            - - Fn::Join:
+                - ":"
+                - - "arn:aws:cloudfront:"
+                  - !Ref "AWS::AccountId"
+                  - distribution
+              - !Ref CloudFrontDistribution
 
 frameworkVersion: '2'
 
@@ -41,6 +44,7 @@ plugins:
   - serverless-sqs-alarms-plugin
   - serverless-webpack
   - serverless-layers
+  - serverless-domain-manager
 
 package:
   individually: true
@@ -132,6 +136,19 @@ resources:
         Comment: 'Stokado service CloudFront distribution'
       Properties: 
         DistributionConfig:
+          Aliases:
+            # we can't reuse the domain name used by API Gateway due to the limitation of edge-optimized endpoints
+            - "${self:custom.stage}-${self:service}-data.${self:custom.envSpecificParams.baseHostname}"
+          ViewerCertificate:
+            AcmCertificateArn: # this specifies the ACM certificate for the custom CDN distribution domain
+              Fn::Join:
+                - ""
+                - - "arn:aws:acm:us-east-1:" # must be created in us-east-1 zone to support edge endpoints
+                  - !Ref "AWS::AccountId"
+                  - ":certificate/"
+                  - ${self:custom.envSpecificParams.certificateId}
+            MinimumProtocolVersion: TLSv1
+            SslSupportMethod: sni-only
           DefaultCacheBehavior:
             AllowedMethods:
               - 'HEAD'
@@ -224,6 +241,7 @@ resources:
 
 custom:
   stage: ${opt:stage, env:STAGE, self:provider.stage}
+  envSpecificParams: ${file(envs.yaml):${self:custom.stage}}
   region: ${opt:region, self:provider.region}
   layersDeploymentBucket: ${opt:layersBucket, "stokado-layers-${self:custom.stage}"} # this bucket must exist BEFORE deploying the stack, can be one for many stacks per AWS account
   tags:
@@ -285,7 +303,7 @@ custom:
         - 1
   alerts:
     stages:
-      - mainnet
+      - rc1
       - baklava
       - alfajores
       - dev
@@ -316,3 +334,10 @@ custom:
       - functionErrors
       - functionInvocations
       - functionDuration
+  customDomains:
+    enabled: ${self:custom.envSpecificParams.withCustomDomain}
+    certificateName: "*.${self:custom.envSpecificParams.baseHostname}"
+    domainName: "${self:custom.stage}-${self:service}.${self:custom.envSpecificParams.baseHostname}"
+    basePath: 'api'
+    stage: ${self:custom.stage}
+    createRoute53Record: ${self:custom.envSpecificParams.createRoute53Record}
