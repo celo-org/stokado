@@ -41,7 +41,7 @@ export class Authorizer {
   authorize = async (
     items: Path[],
     expires: number,
-    signer: string
+    account: string
   ): Promise<Result<AWS.S3.PresignedPost[], AuthorizerError>> => {
     if (!Array.isArray(items) || items.length === 0) {
       return Err(new InvalidPayloadError())
@@ -66,7 +66,7 @@ export class Authorizer {
             return this.s3.createPresignedPost({
               Bucket: this.bucketName,
               Fields: {
-                key: `${signer}${path}`,
+                key: `${account}${path}`,
               },
               Expires: expires,
               Conditions: [

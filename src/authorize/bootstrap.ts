@@ -41,9 +41,10 @@ const handlerFactory = (authorizer: Authorizer, expiresIn: number): APIGatewayPr
     }
 
     try {
-      const { address, data } = JSON.parse(payload)
+      const typedData = JSON.parse(payload)
+      const { signer, data, address } = typedData.message.payload
 
-      const claimedSigner = toChecksumAddress(address)
+      const claimedSigner = toChecksumAddress(signer)
       const guessedSigner = toChecksumAddress(guessSigner(payload, signature))
 
       if (claimedSigner !== guessedSigner) {
@@ -55,7 +56,7 @@ const handlerFactory = (authorizer: Authorizer, expiresIn: number): APIGatewayPr
         const signedUrls = await makeAsyncThrowable(authorizer.authorize)(
           data,
           expiresIn,
-          guessedSigner
+          toChecksumAddress(address)
         )
         return response(200, JSON.stringify(signedUrls))
       } catch (e) {
