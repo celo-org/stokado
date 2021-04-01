@@ -5,9 +5,11 @@ import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } f
 import AWS from 'aws-sdk'
 import { Authorizer } from './authorize'
 import { CredentialsOptions } from 'aws-sdk/lib/credentials'
-import { guessSigner } from '@celo/utils/lib/signatureUtils'
+import { EIP712TypedData } from '@celo/utils/lib/sign-typed-data-utils'
+import {verifyEIP712TypedDataSigner} from '@celo/utils/lib/signatureUtils'
 import { makeAsyncThrowable } from '@celo/base'
-import { toChecksumAddress } from 'ethereumjs-util'
+import { keccak256 } from 'ethereumjs-util' 
+
 
 export const bootstrap = (
   credentials: CredentialsOptions,
@@ -41,13 +43,18 @@ const handlerFactory = (authorizer: Authorizer, expiresIn: number): APIGatewayPr
     }
 
     try {
-      const { address, data } = JSON.parse(payload)
+      const { address, data, expiration } = JSON.parse(payload)
 
-      const claimedSigner = toChecksumAddress(address)
-      const guessedSigner = toChecksumAddress(guessSigner(payload, signature))
+      if(Date.now() > expiration){
+        console.info(`This request has expired`)
+        return response(403, 'This request has expired')
+      }
 
-      if (claimedSigner !== guessedSigner) {
-        console.info(`Guessed signer ${guessedSigner} !== claimed signer ${claimedSigner}`)
+      const bufferPayload = Buffer.from(payload)
+      const typedData = buildEIP712TypedData(data.path, bufferPayload)
+      const validSigner = verifyEIP712TypedDataSigner(typedData, signature, address)
+       if (!validSigner) {
+        console.info(`The guessed signer !== claimed signer ${address}`)
         return response(403, 'Invalid signature provided')
       }
 
@@ -55,7 +62,7 @@ const handlerFactory = (authorizer: Authorizer, expiresIn: number): APIGatewayPr
         const signedUrls = await makeAsyncThrowable(authorizer.authorize)(
           data,
           expiresIn,
-          guessedSigner
+          address
         )
         return response(200, JSON.stringify(signedUrls))
       } catch (e) {
@@ -66,5 +73,48 @@ const handlerFactory = (authorizer: Authorizer, expiresIn: number): APIGatewayPr
       console.debug(e)
       return response(400, 'Invalid request')
     }
+  }
+}
+
+
+function buildEIP712TypedData(
+  path: string,
+  data: Buffer
+): EIP712TypedData {
+  // const chainId = this is the network ID https://eth.wiki/json-rpc/API#net_version
+  const EIP712Domain = [
+    { name: 'name', type: 'string' },
+    { name: 'version', type: 'string' },
+    { name: 'chainId', type: 'uint256' },
+  ]
+
+  let types = {}
+  let message = {}
+
+  types = {
+    ClaimWithPath: [
+      { name: 'path', type: 'string' },
+      { name: 'hash', type: 'string' },
+    ],
+  }
+  message = {
+    hash: keccak256(data).toString('hex'),
+  }
+
+  return {
+    types: {
+      EIP712Domain,
+      ...types,
+    },
+    domain: {
+      name: 'CIP8 Claim',
+      version: '1.0.0',
+      chainId,
+    },
+    primaryType: 'ClaimWithPath',
+    message: {
+      path,
+      ...message,
+    },
   }
 }
