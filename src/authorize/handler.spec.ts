@@ -14,6 +14,8 @@ describe('authorizer handler', () => {
   const writerAddress = publicKeyToAddress(writerPublic)
   const writerEncryptionKeyPrivate =
     '0xc029c933337a6a1b08fc75c56dfba605bfbece471c356923ef79056c5f0a2e81'
+  const writerEncryptionKeyPublic = privateKeyToPublicKey(writerEncryptionKeyPrivate)
+  const writerEncryptionKeyAddress = publicKeyToAddress(writerEncryptionKeyPublic)
   const kit = newKit('https://alfajores-forno.celo-testnet.org')
   kit.addAccount(writerPrivate)
   kit.addAccount(writerEncryptionKeyPrivate)
@@ -31,12 +33,13 @@ describe('authorizer handler', () => {
       },
       'eu-west-1',
       expiresInSeconds,
-      bucket
+      bucket,
+      'https://alfajores-forno.celo-testnet.org'
     )
 
   const getSignature = async (payload: string, kit: ContractKit) => {
     const hexPayload = ensureLeading0x(Buffer.from(payload).toString('hex'))
-    return await kit.getWallet().signPersonalMessage(kit.defaultAccount, hexPayload)
+    return await kit.getWallet().signPersonalMessage(writerEncryptionKeyAddress, hexPayload)
   }
 
   const getEvent = (body: string, headers: APIGatewayProxyEventHeaders): APIGatewayProxyEvent => ({
@@ -103,6 +106,7 @@ describe('authorizer handler', () => {
     const payload = JSON.stringify({
       address: kit.defaultAccount,
       data: [{ path: 'foo' }],
+      signer: writerEncryptionKeyAddress,
     })
     const handler = getHandler()
     const event = getEvent(payload, {
@@ -123,6 +127,7 @@ describe('authorizer handler', () => {
     const payload = JSON.stringify({
       address: kit.defaultAccount,
       data: [{ path: 'foo' }],
+      signer: writerEncryptionKeyAddress,
     })
 
     const handler = getHandler()
@@ -145,11 +150,12 @@ describe('authorizer handler', () => {
     const payload = JSON.stringify({
       address: kit.defaultAccount,
       data: [{ path: '/account/name' }, { path: '/account/name.signature' }],
+      signer: writerEncryptionKeyAddress,
     })
 
     AWSMock.setSDKInstance(AWS)
     AWSMock.mock('S3', 'createPresignedPost', (params: AWS.S3.PresignedPost.Params, callback) => {
-      expect(params.Fields.key).toContain(kit.defaultAccount)
+      expect(params.Fields.key).toContain(writerEncryptionKeyAddress)
       callback(null, 'successfulMock')
     })
 
@@ -172,6 +178,7 @@ describe('authorizer handler', () => {
     const payload = JSON.stringify({
       address: kit.defaultAccount,
       data: [{ path: 'foo' }],
+      signer: writerEncryptionKeyAddress,
     })
 
     const handler = getHandler()

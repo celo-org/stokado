@@ -10,6 +10,7 @@ provider:
   environment:
     BUCKET_NAME: !Ref StorageBucket
     CDN_DISTRIBUTION_ID: ${self:resources.Outputs.CloudFrontDistributionId.Value}
+    FORNO_URL: ${self:custom.envSpecificParams.fornoUrl}
   apiGateway:
     shouldStartNameWithService: true
   iam:
@@ -91,7 +92,7 @@ resources:
         - FileUpdatesQueuePolicy
       # Warning: when a stack gets removed, this bucket will NOT be removed as part of it,
       # so subsequent deployments of the same stack would fail, it has to be removed manually
-      DeletionPolicy: Retain 
+      DeletionPolicy: Retain
       Metadata:
         Comment: 'Secure metadata storage'
       Properties:
@@ -134,7 +135,7 @@ resources:
       Type: AWS::CloudFront::Distribution
       Metadata:
         Comment: 'Stokado service CloudFront distribution'
-      Properties: 
+      Properties:
         DistributionConfig:
           Aliases:
             # we can't reuse the domain name used by API Gateway due to the limitation of edge-optimized endpoints

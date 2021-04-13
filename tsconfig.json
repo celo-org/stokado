@@ -17,7 +17,8 @@
       "@app/flush/*": [
         "src/flush/*"
       ]
-    }
+    },
+    "resolveJsonModule": true
   },
   "include": ["./**/*.ts"],
   "exclude": [

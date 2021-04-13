@@ -11,5 +11,6 @@ export const handle: APIGatewayProxyHandler = bootstrap(
   },
   process.env.AWS_REGION,
   parseInt(process.env.AUTHORIZATION_EXPIRES_IN, 10),
-  process.env.BUCKET_NAME
+  process.env.BUCKET_NAME,
+  process.env.FORNO_URL
 )
