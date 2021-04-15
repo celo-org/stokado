@@ -7,19 +7,23 @@ default_env: &default_env
 dev:
   <<: *default_env
   certificateId: "c6d0791a-0882-488b-bb3e-c4b4bdd1bd37"
+  fornoUrl: "https://staging-forno.celo-networks-dev.org"
   withCustomDomain: true
 
 alfajores:
   <<: *default_env
   certificateId: "b8b13459-2236-4850-a456-fd57b4ca4b7f"
+  fornoUrl: "https://alfajores-forno.celo-testnet.org"
   withCustomDomain: true
 
 baklava:
   <<: *default_env
   certificateId: "b8b13459-2236-4850-a456-fd57b4ca4b7f"
+  fornoUrl: "https://baklava-forno.celo-testnet.org"
   withCustomDomain: true
 
 rc1:
   <<: *default_env
   certificateId: "b8b13459-2236-4850-a456-fd57b4ca4b7f"
+  fornoUrl: "https://forno.celo.org"
   withCustomDomain: true
