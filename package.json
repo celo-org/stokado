@@ -20,8 +20,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@celo/base": "^1.0.0-beta3",
-    "@celo/utils": "^1.0.0-beta3",
+    "@celo/base": "^1.1.0",
+    "@celo/utils": "^1.1.0",
     "@types/aws-lambda": "^8.10.66",
     "ethereumjs-util": "^7.0.7",
     "source-map-support": "^0.5.19"
@@ -30,8 +30,8 @@
     "node": "10"
   },
   "devDependencies": {
-    "@celo/contractkit": "^1.0.0-beta3",
-    "@celo/identity": "^1.0.0-beta3",
+    "@celo/contractkit": "^1.1.0",
+    "@celo/identity": "^1.1.0",
     "@celo/typescript": "^0.0.1",
     "@serverless/typescript": "^2.15.0",
     "@types/jest": "^26.0.19",
@@ -40,6 +40,7 @@
     "@typescript-eslint/parser": "^4.10.0",
     "aws-sdk": "^2.812.0",
     "aws-sdk-mock": "^5.1.0",
+    "dotenv": "^8.2.0",
     "eslint": "^7.15.0",
     "eslint-config-prettier": "^7.1.0",
     "eslint-plugin-prettier": "^3.3.0",

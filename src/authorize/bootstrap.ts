@@ -8,20 +8,22 @@ import { CredentialsOptions } from 'aws-sdk/lib/credentials'
 import { EIP712TypedData } from '@celo/utils/lib/sign-typed-data-utils'
 import {verifyEIP712TypedDataSigner} from '@celo/utils/lib/signatureUtils'
 import { makeAsyncThrowable } from '@celo/base'
-import { keccak256 } from 'ethereumjs-util' 
-
+import { newKit } from '@celo/contractkit'
+import { publicKeyToAddress } from '@celo/utils/lib/address'
+import { keccak256 } from 'ethereumjs-util'
 
 export const bootstrap = (
   credentials: CredentialsOptions,
   region: string,
   expiresIn: number,
-  bucketName: string
+  bucketName: string,
+  fornoUrl: string
 ): APIGatewayProxyHandler => {
   AWS.config.update({ credentials, region })
   const s3 = new AWS.S3({ useAccelerateEndpoint: true })
   const authorizer = new Authorizer(s3, bucketName)
 
-  return handlerFactory(authorizer, expiresIn)
+  return handlerFactory(authorizer, expiresIn, fornoUrl)
 }
 
 const response = (statusCode: number, body: string): APIGatewayProxyResult => {
@@ -31,7 +33,11 @@ const response = (statusCode: number, body: string): APIGatewayProxyResult => {
   }
 }
 
-const handlerFactory = (authorizer: Authorizer, expiresIn: number): APIGatewayProxyHandler => {
+const handlerFactory = (
+  authorizer: Authorizer,
+  expiresIn: number,
+  fornoUrl: string
+): APIGatewayProxyHandler => {
   return async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     console.debug(event)
 
@@ -44,18 +50,33 @@ const handlerFactory = (authorizer: Authorizer, expiresIn: number): APIGatewayPr
 
     try {
       const { address, data, expiration } = JSON.parse(payload)
+      const { address, data, signer } = JSON.parse(payload)
 
       if(Date.now() > expiration){
         console.info(`This request has expired`)
         return response(403, 'This request has expired')
       }
+      const guessedSigner = toChecksumAddress(guessSigner(payload, signature))
 
+      const kit = newKit(fornoUrl)
+      const accounts = await kit.contracts.getAccounts()
+      const DEK = await accounts.getDataEncryptionKey(address)
+
+      if (guessedSigner !== publicKeyToAddress(DEK)) {
+        console.info(
+          `Guessed signer ${guessedSigner} !== address of DEK ${publicKeyToAddress(DEK)}`
+        )
       const bufferPayload = Buffer.from(payload)
       const typedData = buildEIP712TypedData(data.path, bufferPayload)
       const validSigner = verifyEIP712TypedDataSigner(typedData, signature, address)
        if (!validSigner) {
         console.info(`The guessed signer !== claimed signer ${address}`)
         return response(403, 'Invalid signature provided')
+      }
+
+      if (signer !== publicKeyToAddress(DEK)) {
+        console.info(`Provided signer ${signer} !== address of DEK ${publicKeyToAddress(DEK)}`)
+        return response(403, 'Invalid signer provided')
       }
 
       try {

@@ -9,7 +9,7 @@ module.exports = {
   testEnvironment: 'node',
   coverageDirectory: './coverage',
   verbose: true,
-  roots: ['<rootDir>/src'],
+  roots: ['<rootDir>'],
   collectCoverageFrom: ['**/*.{js,jsx}', '**/*.{ts,tx}', '!**/node_modules/**'],
   moduleNameMapper: {
     ...pathsToModuleNameMapper(compilerOptions.paths, {
@@ -18,4 +18,5 @@ module.exports = {
     'src/authorize/(.*)': '<rootDir>/src/authorize/$1',
     'src/flush/(.*)': '<rootDir>/src/authorize/$1',
   },
+  setupFiles: ["dotenv/config"],
 }
