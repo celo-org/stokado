@@ -146,6 +146,28 @@ describe('authorizer handler', () => {
     }
   })
 
+  it('validates signer', async () => {
+    const payload = JSON.stringify({
+      address: kit.defaultAccount,
+      data: [{ path: 'foo' }],
+      signer: writerAddress,
+    })
+
+    const handler = getHandler()
+    const event = getEvent(payload, {
+      Signature: await getSignature(payload, kit),
+    })
+    const result = await handler(event, null, null)
+    console.log(result)
+
+    expect(result).not.toBeUndefined()
+
+    if (result) {
+      expect(result.statusCode).toBe(403)
+      expect(result.body).toBe('Invalid signer provided')
+    }
+  })
+
   it('handles valid payload', async () => {
     const payload = JSON.stringify({
       address: kit.defaultAccount,
