@@ -25,8 +25,8 @@ describe('e2e test', () => {
     const dataPath = '/account/name'
     const signedUrlsPayload = {
       address: writerAddress,
+      expiration: 9999999999999,
       signer: writerEncryptionKeyAddress,
-      expiration: 1618529329893,
       data: [
         {
           path: dataPath,
@@ -44,7 +44,7 @@ describe('e2e test', () => {
       bufferPayload
     )
     expect(signature).toBe(
-      '0x575e783ca3ddb6f02c0f069d4c33573019660b61b7b8958db24490300c9397c27187c554c15968360e04cbd61d2214babf264e7bbdc5ed06d0cd5d3d91d532f700'
+      '0xcc803a75023378e86cb6a238c4c50f51fbf4389110f5cd833f99b4e9df9a6efe5b0530292b40652a6d7a75c637ad84b8a095ec20585e49e04417ce5e0a8b81a500'
     )
   })
 

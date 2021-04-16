@@ -1,12 +1,12 @@
 import { APIGatewayProxyEvent, APIGatewayProxyEventHeaders } from 'aws-lambda'
 import { ContractKit, newKit } from '@celo/contractkit'
 import { privateKeyToPublicKey, publicKeyToAddress } from '@celo/utils/lib/address'
-
 import AWS from 'aws-sdk'
 import AWSMock from 'aws-sdk-mock'
+import { OffchainDataWrapper } from '@celo/identity/lib/offchain-data-wrapper'
 import { bootstrap } from '@app/authorize/bootstrap'
-import { ensureLeading0x } from '@celo/base'
 import { handle } from '@app/authorize/handler'
+import { signBuffer } from '@celo/identity/lib/offchain/utils'
 
 describe('authorizer handler', () => {
   const writerPrivate = '0xdcef435698f5d070035071541c14440fde752ea847d863d88418218f93ad5a1a'
@@ -21,6 +21,7 @@ describe('authorizer handler', () => {
   kit.addAccount(writerEncryptionKeyPrivate)
   kit.defaultAccount = writerAddress
 
+  const dataPath = '/account/name'
   const bucket = 'bucket'
   const expiresInSeconds = 10
 
@@ -38,8 +39,12 @@ describe('authorizer handler', () => {
     )
 
   const getSignature = async (payload: string, kit: ContractKit) => {
-    const hexPayload = ensureLeading0x(Buffer.from(payload).toString('hex'))
-    return await kit.getWallet().signPersonalMessage(writerEncryptionKeyAddress, hexPayload)
+    const bufferPayload = Buffer.from(payload)
+    return signBuffer(
+      { kit, signer: writerEncryptionKeyAddress } as OffchainDataWrapper,
+      dataPath,
+      bufferPayload
+    )
   }
 
   const getEvent = (body: string, headers: APIGatewayProxyEventHeaders): APIGatewayProxyEvent => ({
@@ -106,6 +111,7 @@ describe('authorizer handler', () => {
     const payload = JSON.stringify({
       address: kit.defaultAccount,
       data: [{ path: 'foo' }],
+      expiration: new Date().getTime() + 10000,
       signer: writerEncryptionKeyAddress,
     })
     const handler = getHandler()
@@ -127,6 +133,7 @@ describe('authorizer handler', () => {
     const payload = JSON.stringify({
       address: kit.defaultAccount,
       data: [{ path: 'foo' }],
+      expiration: new Date().getTime() + 10000,
       signer: writerEncryptionKeyAddress,
     })
 
@@ -149,8 +156,9 @@ describe('authorizer handler', () => {
   it('validates signer', async () => {
     const payload = JSON.stringify({
       address: kit.defaultAccount,
-      data: [{ path: 'foo' }],
       signer: writerAddress,
+      expiration: new Date().getTime() + 10000,
+      data: [{ path: dataPath }, { path: `${dataPath}.signature` }],
     })
 
     const handler = getHandler()
@@ -171,13 +179,14 @@ describe('authorizer handler', () => {
   it('handles valid payload', async () => {
     const payload = JSON.stringify({
       address: kit.defaultAccount,
-      data: [{ path: '/account/name' }, { path: '/account/name.signature' }],
+      expiration: new Date().getTime() + 10000,
       signer: writerEncryptionKeyAddress,
+      data: [{ path: dataPath }, { path: `${dataPath}.signature` }],
     })
 
     AWSMock.setSDKInstance(AWS)
     AWSMock.mock('S3', 'createPresignedPost', (params: AWS.S3.PresignedPost.Params, callback) => {
-      expect(params.Fields.key).toContain(writerEncryptionKeyAddress)
+      expect(params.Fields.key).toContain(writerAddress)
       callback(null, 'successfulMock')
     })
 
@@ -199,8 +208,9 @@ describe('authorizer handler', () => {
   it('wraps path errors in 400', async () => {
     const payload = JSON.stringify({
       address: kit.defaultAccount,
-      data: [{ path: 'foo' }],
+      expiration: new Date().getTime() + 10000,
       signer: writerEncryptionKeyAddress,
+      data: [{ path: dataPath }, { path: `${dataPath}.signagure` }],
     })
 
     const handler = getHandler()
