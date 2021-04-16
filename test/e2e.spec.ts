@@ -2,10 +2,11 @@ import * as event from './authorize.req.json'
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda/trigger/api-gateway-proxy'
 import { privateKeyToPublicKey, publicKeyToAddress } from '@celo/utils/lib/address'
 import FormData from 'form-data'
-import { ensureLeading0x } from '@celo/base'
+import { OffchainDataWrapper } from '@celo/identity/lib/offchain-data-wrapper'
 import fetch from 'node-fetch'
 import { handle } from '@app/authorize/handler'
 import { newKit } from '@celo/contractkit'
+import { signBuffer } from '@celo/identity/lib/offchain/utils'
 
 describe('e2e test', () => {
   it('adds an account, sets a DEK for the account and generates signature of event body', async () => {
@@ -21,18 +22,29 @@ describe('e2e test', () => {
     writerKit.addAccount(writerPrivate)
     writerKit.addAccount(writerEncryptionKeyPrivate)
     writerKit.defaultAccount = writerAddress
-    const hexPayload = ensureLeading0x(Buffer.from(event.body).toString('hex'))
-    const signature = await writerKit
-      .getWallet()
-      .signPersonalMessage(writerEncryptionKeyAddress, hexPayload)
+    const dataPath = '/account/name'
+    const signedUrlsPayload = {
+      address: writerAddress,
+      expiration: 9999999999999,
+      signer: writerEncryptionKeyAddress,
+      data: [
+        {
+          path: dataPath,
+        },
+        {
+          path: `${dataPath}.signature`,
+        },
+      ],
+    }
 
-    const accounts = await writerKit.contracts.getAccounts()
-    await accounts
-      .setAccountDataEncryptionKey(writerEncryptionKeyPublic)
-      .sendAndWaitForReceipt({ from: writerAddress })
-
+    const bufferPayload = Buffer.from(JSON.stringify(signedUrlsPayload))
+    const signature = await signBuffer(
+      { kit: writerKit, signer: writerEncryptionKeyAddress } as OffchainDataWrapper,
+      dataPath,
+      bufferPayload
+    )
     expect(signature).toBe(
-      '0x60fc4b5845e9f74081b03217becf85386808f4d313138e9bd2cf3db3aca5d9b468fc1023a2e19b20c69d475b6d2f71d370c2c8ecb0111d1039a7e822105ae29201'
+      '0xcc803a75023378e86cb6a238c4c50f51fbf4389110f5cd833f99b4e9df9a6efe5b0530292b40652a6d7a75c637ad84b8a095ec20585e49e04417ce5e0a8b81a500'
     )
   })
 

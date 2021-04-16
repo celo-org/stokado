@@ -13,7 +13,7 @@
     "CloudFront-Viewer-Country": "DE",
     "Content-Type": "application/json",
     "Host": "kel03d4ef0.execute-api.eu-west-1.amazonaws.com",
-    "Signature": "0x60fc4b5845e9f74081b03217becf85386808f4d313138e9bd2cf3db3aca5d9b468fc1023a2e19b20c69d475b6d2f71d370c2c8ecb0111d1039a7e822105ae29201",
+    "Signature": "0xcc803a75023378e86cb6a238c4c50f51fbf4389110f5cd833f99b4e9df9a6efe5b0530292b40652a6d7a75c637ad84b8a095ec20585e49e04417ce5e0a8b81a500",
     "User-Agent": "node-fetch/1.0 (+https://github.com/bitinn/node-fetch)",
     "Via": "1.1 e90965fc09a647100bac5d68d2d591f6.cloudfront.net (CloudFront)",
     "X-Amz-Cf-Id": "7rnxSlIixjVxbVi1CEYQk8eOLBSzFnzfrA-BAwDtAmLMrPnL_qdqSg==",
@@ -33,7 +33,7 @@
     "CloudFront-Viewer-Country": ["DE"],
     "Content-Type": ["application/json"],
     "Host": ["kel03d4ef0.execute-api.eu-west-1.amazonaws.com"],
-    "Signature": ["0x60fc4b5845e9f74081b03217becf85386808f4d313138e9bd2cf3db3aca5d9b468fc1023a2e19b20c69d475b6d2f71d370c2c8ecb0111d1039a7e822105ae29201"],
+    "Signature": ["0xcc803a75023378e86cb6a238c4c50f51fbf4389110f5cd833f99b4e9df9a6efe5b0530292b40652a6d7a75c637ad84b8a095ec20585e49e04417ce5e0a8b81a500"],
     "User-Agent": ["node-fetch/1.0 (+https://github.com/bitinn/node-fetch)"],
     "Via": ["1.1 e90965fc09a647100bac5d68d2d591f6.cloudfront.net (CloudFront)"],
     "X-Amz-Cf-Id": ["7rnxSlIixjVxbVi1CEYQk8eOLBSzFnzfrA-BAwDtAmLMrPnL_qdqSg=="],
@@ -76,6 +76,6 @@
     "domainName": "kel03d4ef0.execute-api.eu-west-1.amazonaws.com",
     "apiId": "kel03d4ef0"
   },
-  "body": "{\"address\":\"0x1998cAfD892179aE648c71F9107fc9cc6A156155\",\"signer\":\"0x17Dd1686F1B592C7d0869b439ddd1fCD669b352f\",\"data\":[{\"path\":\"/account/name\"},{\"path\":\"/account/name.signature\"}]}",
+  "body": "{\"address\":\"0x1998cAfD892179aE648c71F9107fc9cc6A156155\",\"expiration\":9999999999999,\"signer\":\"0x17Dd1686F1B592C7d0869b439ddd1fCD669b352f\",\"data\":[{\"path\":\"/account/name\"},{\"path\":\"/account/name.signature\"}]}",
   "isBase64Encoded": false
 }

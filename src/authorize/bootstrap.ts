@@ -1,15 +1,14 @@
 import 'source-map-support/register'
-
 import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult } from 'aws-lambda'
-
 import AWS from 'aws-sdk'
 import { Authorizer } from './authorize'
 import { CredentialsOptions } from 'aws-sdk/lib/credentials'
-import { guessSigner } from '@celo/utils/lib/signatureUtils'
+import { OffchainDataWrapper } from '@celo/identity/lib/offchain-data-wrapper'
+import { buildEIP712TypedData } from '@celo/identity/lib/offchain/utils'
 import { makeAsyncThrowable } from '@celo/base'
 import { newKit } from '@celo/contractkit'
 import { publicKeyToAddress } from '@celo/utils/lib/address'
-import { toChecksumAddress } from 'ethereumjs-util'
+import { verifyEIP712TypedDataSigner } from '@celo/utils/lib/signatureUtils'
 
 export const bootstrap = (
   credentials: CredentialsOptions,
@@ -48,32 +47,43 @@ const handlerFactory = (
     }
 
     try {
-      const { address, data, signer } = JSON.parse(payload)
+      const { address, data, signer, expiration } = JSON.parse(payload)
 
-      const guessedSigner = toChecksumAddress(guessSigner(payload, signature))
+      const isNumeric = (value) => /^-?\d+$/.test(value)
+
+      if (!expiration || !isNumeric(expiration)) {
+        return response(400, `Invalid expiration provided: ${expiration}`)
+      }
+
+      if (Date.now() > expiration) {
+        console.info(`This request has expired`)
+        return response(403, 'This request has expired')
+      }
 
       const kit = newKit(fornoUrl)
       const accounts = await kit.contracts.getAccounts()
       const DEK = await accounts.getDataEncryptionKey(address)
-
-      if (guessedSigner !== publicKeyToAddress(DEK)) {
-        console.info(
-          `Guessed signer ${guessedSigner} !== address of DEK ${publicKeyToAddress(DEK)}`
-        )
-        return response(403, 'Invalid signature provided')
-      }
 
       if (signer !== publicKeyToAddress(DEK)) {
         console.info(`Provided signer ${signer} !== address of DEK ${publicKeyToAddress(DEK)}`)
         return response(403, 'Invalid signer provided')
       }
 
+      const bufferPayload = Buffer.from(payload)
+      const typedData = await buildEIP712TypedData(
+        { kit } as OffchainDataWrapper,
+        data[0].path,
+        bufferPayload
+      )
+
+      const validSigner = verifyEIP712TypedDataSigner(typedData, signature, signer)
+      if (!validSigner) {
+        console.info(`The guessed signer !== claimed signer ${address}`)
+        return response(403, 'Invalid signature provided')
+      }
+
       try {
-        const signedUrls = await makeAsyncThrowable(authorizer.authorize)(
-          data,
-          expiresIn,
-          guessedSigner
-        )
+        const signedUrls = await makeAsyncThrowable(authorizer.authorize)(data, expiresIn, address)
         return response(200, JSON.stringify(signedUrls))
       } catch (e) {
         console.error(e)
