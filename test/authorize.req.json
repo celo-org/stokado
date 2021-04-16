@@ -76,6 +76,6 @@
     "domainName": "kel03d4ef0.execute-api.eu-west-1.amazonaws.com",
     "apiId": "kel03d4ef0"
   },
-  "body": "{\"address\":\"0x1998cAfD892179aE648c71F9107fc9cc6A156155\",\"signer\":\"0x17Dd1686F1B592C7d0869b439ddd1fCD669b352f\",\"data\":[{\"path\":\"/account/name\"},{\"path\":\"/account/name.signature\"}]}",
+  "body": "{\"address\":\"0x1998cAfD892179aE648c71F9107fc9cc6A156155\",\"expiration\":9999999999999,\"signer\":\"0x17Dd1686F1B592C7d0869b439ddd1fCD669b352f\",\"data\":[{\"path\":\"/account/name\"},{\"path\":\"/account/name.signature\"}]}",
   "isBase64Encoded": false
 }

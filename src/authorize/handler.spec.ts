@@ -231,4 +231,74 @@ describe('authorizer handler', () => {
   it('uses bootstrapped handler', async () => {
     expect(handle).toBeInstanceOf(Function)
   })
+
+  describe('expiration', () => {
+    it('handles invalid expiration', async () => {
+      const payload = JSON.stringify({
+        address: kit.defaultAccount,
+        data: [{ path: dataPath }, { path: `${dataPath}.signature` }],
+        signer: writerEncryptionKeyAddress,
+      })
+
+      const handler = getHandler()
+      const event = getEvent(payload, {
+        Signature: await getSignature(payload, kit),
+      })
+
+      const result = await handler(event, null, null)
+
+      expect(result).not.toBeUndefined()
+
+      if (result) {
+        expect(result.statusCode).toBe(400)
+        expect(result.body).toBe('Invalid expiration provided: undefined')
+      }
+    })
+
+    it('validates expiration', async () => {
+      const payload = JSON.stringify({
+        address: kit.defaultAccount,
+        data: [{ path: dataPath }, { path: `${dataPath}.signature` }],
+        expiration: 'wrong expiration type',
+        signer: writerEncryptionKeyAddress,
+      })
+
+      const handler = getHandler()
+      const event = getEvent(payload, {
+        Signature: await getSignature(payload, kit),
+      })
+
+      const result = await handler(event, null, null)
+
+      expect(result).not.toBeUndefined()
+
+      if (result) {
+        expect(result.statusCode).toBe(400)
+        expect(result.body).toBe('Invalid expiration provided: wrong expiration type')
+      }
+    })
+
+    it('handles expired request', async () => {
+      const payload = JSON.stringify({
+        address: kit.defaultAccount,
+        data: [{ path: dataPath }, { path: `${dataPath}.signature` }],
+        expiration: new Date().getTime() - 10,
+        signer: writerEncryptionKeyAddress,
+      })
+
+      const handler = getHandler()
+      const event = getEvent(payload, {
+        Signature: await getSignature(payload, kit),
+      })
+
+      const result = await handler(event, null, null)
+
+      expect(result).not.toBeUndefined()
+
+      if (result) {
+        expect(result.statusCode).toBe(403)
+        expect(result.body).toBe('This request has expired')
+      }
+    })
+  })
 })
