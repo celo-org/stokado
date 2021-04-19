@@ -68,6 +68,9 @@ functions:
     package:
       include:
         - src/authorize/**
+    alarms:
+      - name: functionDuration
+        threshold: ${self:custom.parameters.authorize.expectedMaxAverageDuration}
   flush:
     memorySize: ${self:custom.parameters.flush.memorySize}
     timeout: ${self:custom.parameters.flush.timeout}
@@ -255,12 +258,13 @@ custom:
       memorySize: 256
       timeout: 5
       authorizationExpiresIn: 300000 # 5 minutes
+      expectedMaxAverageDuration: ${self:custom.envSpecificParams.authorize.expectedMaxAverageDuration}
     flush:
       memorySize: 256
       timeout: 5
       batchSize: 1000
       batchingWindow: 30
-      expectedMaxAverageDuration: 2000 # 2 seconds
+      expectedMaxAverageDuration: ${self:custom.envSpecificParams.flush.expectedMaxAverageDuration}
     cdn:
       cacheDefaultTtl: 86400 # 1 day
       cacheMinTtl: 86400 # 1 day

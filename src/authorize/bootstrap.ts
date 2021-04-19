@@ -5,6 +5,7 @@ import { Authorizer } from './authorize'
 import { CredentialsOptions } from 'aws-sdk/lib/credentials'
 import { OffchainDataWrapper } from '@celo/identity/lib/offchain-data-wrapper'
 import { buildEIP712TypedData } from '@celo/identity/lib/offchain/utils'
+import { eqAddress } from '@celo/base/lib/address'
 import { makeAsyncThrowable } from '@celo/base'
 import { newKit } from '@celo/contractkit'
 import { publicKeyToAddress } from '@celo/utils/lib/address'
@@ -64,7 +65,7 @@ const handlerFactory = (
       const accounts = await kit.contracts.getAccounts()
       const DEK = await accounts.getDataEncryptionKey(address)
 
-      if (signer !== publicKeyToAddress(DEK)) {
+      if (!eqAddress(signer, publicKeyToAddress(DEK))) {
         console.info(`Provided signer ${signer} !== address of DEK ${publicKeyToAddress(DEK)}`)
         return response(403, 'Invalid signer provided')
       }
