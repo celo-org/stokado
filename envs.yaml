@@ -15,15 +15,27 @@ alfajores:
   certificateId: "b8b13459-2236-4850-a456-fd57b4ca4b7f"
   fornoUrl: "https://alfajores-forno.celo-testnet.org"
   withCustomDomain: true
+  authorize:
+    expectedDuration: 2000
+  flush:
+    expectedDuration: 2000
 
 baklava:
   <<: *default_env
   certificateId: "b8b13459-2236-4850-a456-fd57b4ca4b7f"
   fornoUrl: "https://baklava-forno.celo-testnet.org"
   withCustomDomain: true
+  authorize:
+    expectedDuration: 2000
+  flush:
+    expectedDuration: 2000
 
 rc1:
   <<: *default_env
   certificateId: "b8b13459-2236-4850-a456-fd57b4ca4b7f"
   fornoUrl: "https://forno.celo.org"
   withCustomDomain: true
+  authorize:
+    expectedDuration: 1000
+  flush:
+    expectedDuration: 2000
