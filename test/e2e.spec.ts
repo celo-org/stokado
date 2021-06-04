@@ -1,6 +1,8 @@
 import * as event from './authorize.req.json'
+
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda/trigger/api-gateway-proxy'
 import { privateKeyToPublicKey, publicKeyToAddress } from '@celo/utils/lib/address'
+
 import FormData from 'form-data'
 import { OffchainDataWrapper } from '@celo/identity/lib/offchain-data-wrapper'
 import fetch from 'node-fetch'
@@ -44,7 +46,7 @@ describe('e2e test', () => {
       bufferPayload
     )
     expect(signature).toBe(
-      '0xcc803a75023378e86cb6a238c4c50f51fbf4389110f5cd833f99b4e9df9a6efe5b0530292b40652a6d7a75c637ad84b8a095ec20585e49e04417ce5e0a8b81a500'
+      '0x0aea94dbe2cdbd2ae3be7e78dc2df9c16a5ef14b12a0d00bb1ec5ab1c2bc7cf536add485cb66303de88b4b4ed474e0319373a3ddd149e044f76e578e9e30377d01'
     )
   })
 
