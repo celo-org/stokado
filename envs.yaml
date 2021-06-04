@@ -16,9 +16,9 @@ alfajores:
   fornoUrl: "https://alfajores-forno.celo-testnet.org"
   withCustomDomain: true
   authorize:
-    expectedDuration: 2000
+    expectedMaxAverageDuration: 3000
   flush:
-    expectedDuration: 2000
+    expectedMaxAverageDuration: 20000
 
 baklava:
   <<: *default_env
@@ -26,9 +26,9 @@ baklava:
   fornoUrl: "https://baklava-forno.celo-testnet.org"
   withCustomDomain: true
   authorize:
-    expectedDuration: 2000
+    expectedMaxAverageDuration: 3000
   flush:
-    expectedDuration: 2000
+    expectedMaxAverageDuration: 20000
 
 rc1:
   <<: *default_env
@@ -36,6 +36,6 @@ rc1:
   fornoUrl: "https://forno.celo.org"
   withCustomDomain: true
   authorize:
-    expectedDuration: 1000
+    expectedMaxAverageDuration: 3000
   flush:
-    expectedDuration: 2000
+    expectedMaxAverageDuration: 20000
