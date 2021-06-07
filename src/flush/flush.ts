@@ -13,13 +13,14 @@ export class Flusher {
   }
 
   flush(
-    keys: string[]
+    keys: string[],
+    messageId: string
   ): Promise<PromiseResult<AWS.CloudFront.CreateInvalidationResult, AWS.AWSError>> {
     console.debug('Flushing the keys', keys)
 
     const invalidationRequest = this.createInvalidationRequest(
       keys,
-      this.getInvalidationReference(),
+      this.getInvalidationReference(messageId),
       this.distributionId
     )
     console.debug(invalidationRequest)
@@ -27,8 +28,8 @@ export class Flusher {
     return this.cdn.createInvalidation(invalidationRequest).promise()
   }
 
-  private getInvalidationReference(): string {
-    return `invalidation-${Date.now()}`
+  private getInvalidationReference(messageId: string): string {
+    return `invalidation-${messageId}`
   }
 
   private createInvalidationRequest(

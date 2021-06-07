@@ -3,7 +3,7 @@ import AWSMock from 'aws-sdk-mock'
 import { Flusher } from './flush'
 
 describe('flush', () => {
-  it('creates invalidation reqeust', async () => {
+  it('creates invalidation request', async () => {
     const distributionId = 'distribution'
     const keys = ['/some/key']
 
@@ -14,7 +14,7 @@ describe('flush', () => {
       'createInvalidation',
       (params: AWS.CloudFront.Types.CreateInvalidationRequest, callback) => {
         expect(params.DistributionId).toBe(distributionId)
-        expect(params.InvalidationBatch.CallerReference).toContain('invalidation-')
+        expect(params.InvalidationBatch.CallerReference).toEqual('invalidation-unique-message-id')
         expect(params.InvalidationBatch.Paths.Quantity).toBe(1)
         expect(params.InvalidationBatch.Paths.Items).toEqual(keys)
         callback(null, expectedInvalidationResult)
@@ -24,7 +24,7 @@ describe('flush', () => {
     const cdn = new AWS.CloudFront()
 
     const flusher = new Flusher(cdn, distributionId)
-    const result = await flusher.flush(keys)
+    const result = await flusher.flush(keys, 'unique-message-id')
 
     expect(result).toBe(expectedInvalidationResult)
     AWSMock.restore('CloudFront')
