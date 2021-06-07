@@ -38,4 +38,4 @@ rc1:
   authorize:
     expectedMaxAverageDuration: 3000
   flush:
-    expectedMaxAverageDuration: 20000
+    expectedMaxAverageDuration: 50000
