@@ -261,7 +261,7 @@ custom:
       expectedMaxAverageDuration: ${self:custom.envSpecificParams.authorize.expectedMaxAverageDuration}
     flush:
       memorySize: 256
-      timeout: 30
+      timeout: 50
       batchSize: 1000
       batchingWindow: 10
       expectedMaxAverageDuration: ${self:custom.envSpecificParams.flush.expectedMaxAverageDuration}

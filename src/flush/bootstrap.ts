@@ -37,7 +37,7 @@ const handlerFactory = (flusher: Flusher): SQSHandler => {
       throw new Error('Empty keys')
     }
 
-    const result = await flusher.flush(keys)
+    const result = await flusher.flush(keys, event.Records[0].messageId)
     console.debug(result)
   }
 }
