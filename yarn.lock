@@ -302,6 +302,11 @@
   resolved "https://registry.yarnpkg.com/@celo/base/-/base-1.2.2-beta.tgz#c869adb46375cea96016eea5ae102ff964686e8f"
   integrity sha512-dOwss0fzbpZfSPDbQCcuaTDDLD8iqDOc3TXxRMX6uQ17ykSl9s71EKqcYc4eJgD6vP//sDno/pUbSlnqNiNOIA==
 
+"@celo/base@1.5.2":
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/@celo/base/-/base-1.5.2.tgz#168ab5e4e30b374079d8d139fafc52ca6bfd4100"
+  integrity sha512-KGf6Dl9E6D01vAfkgkjL2sG+zqAjspAogILIpWstljWdG5ifyA75jihrnDEHaMCoQS0KxHvTdP1XYS/GS6BEyQ==
+
 "@celo/base@^1.2.2":
   version "1.2.4"
   resolved "https://registry.yarnpkg.com/@celo/base/-/base-1.2.4.tgz#4d3f1d6cf395e5c9e4c725ea392a049551c00edb"
@@ -393,12 +398,12 @@
     web3-eth-abi "1.3.5"
     web3-utils "1.3.5"
 
-"@celo/utils@^1.2.2":
-  version "1.2.4"
-  resolved "https://registry.yarnpkg.com/@celo/utils/-/utils-1.2.4.tgz#01b0e9ff6bb1f9c2792ae7ba624b1297a18792e9"
-  integrity sha512-FaO70pCWOsPp9MK0A+hUEGLycmqclzywexjvQfmi3KAE+5hy1zlgCmzIgigAkNanYlnbsLhrf/Gro0AVT9RBCQ==
+"@celo/utils@^1.5.2":
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/@celo/utils/-/utils-1.5.2.tgz#ddb7f3b50c801225ab41d2355fbe010976329099"
+  integrity sha512-JyKjuVMbdkyFOb1TpQw6zqamPQWYg7I9hOnva3MeIcQ3ZrJIaNHx0/I+JXFjuu3YYBc1mG8nXp2uPJJTGrwzCQ==
   dependencies:
-    "@celo/base" "1.2.4"
+    "@celo/base" "1.5.2"
     "@types/country-data" "^0.0.0"
     "@types/elliptic" "^6.4.9"
     "@types/ethereumjs-util" "^5.2.0"
@@ -2568,16 +2573,6 @@ bip32@2.0.5:
     typeforce "^1.11.5"
     wif "^2.0.6"
 
-"bip39@git+https://github.com/bitcoinjs/bip39.git#d8ea080a18b40f301d4e2219a2991cd2417e83c2":
-  version "3.0.3"
-  uid d8ea080a18b40f301d4e2219a2991cd2417e83c2
-  resolved "git+https://github.com/bitcoinjs/bip39.git#d8ea080a18b40f301d4e2219a2991cd2417e83c2"
-  dependencies:
-    "@types/node" "11.11.6"
-    create-hash "^1.1.0"
-    pbkdf2 "^3.0.9"
-    randombytes "^2.0.1"
-
 "bip39@https://github.com/bitcoinjs/bip39#d8ea080a18b40f301d4e2219a2991cd2417e83c2":
   version "3.0.3"
   resolved "https://github.com/bitcoinjs/bip39#d8ea080a18b40f301d4e2219a2991cd2417e83c2"
@@ -2625,19 +2620,6 @@ blob@0.0.5:
   version "0.0.5"
   resolved "https://registry.yarnpkg.com/blob/-/blob-0.0.5.tgz#d680eeef25f8cd91ad533f5b01eed48e64caf683"
   integrity sha512-gaqbzQPqOoamawKg0LGVd7SzLgXS+JH61oWprSLH+P+abTczqJbhTR8CmJ2u9/bUYNmHTGJx/UEmn6doAvvuig==
-
-"bls12377js@git+https://github.com/celo-org/bls12377js.git#cb38a4cfb643c778619d79b20ca3e5283a2122a6":
-  version "0.1.0"
-  uid cb38a4cfb643c778619d79b20ca3e5283a2122a6
-  resolved "git+https://github.com/celo-org/bls12377js.git#cb38a4cfb643c778619d79b20ca3e5283a2122a6"
-  dependencies:
-    "@stablelib/blake2xs" "0.10.4"
-    "@types/node" "^12.11.7"
-    big-integer "^1.6.44"
-    chai "^4.2.0"
-    mocha "^6.2.2"
-    ts-node "^8.4.1"
-    typescript "^3.6.4"
 
 "bls12377js@https://github.com/celo-org/bls12377js#cb38a4cfb643c778619d79b20ca3e5283a2122a6":
   version "0.1.0"
