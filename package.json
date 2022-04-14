@@ -20,12 +20,12 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "dependencies": {
-    "@celo/base": "^1.2.2",
+    "@celo/base": "^1.5.2",
     "@celo/contractkit": "^1.2.2-beta",
     "@celo/identity": "^1.2.2-beta",
     "@celo/utils": "^1.5.2",
     "@types/aws-lambda": "^8.10.66",
-    "ethereumjs-util": "^7.0.10",
+    "ethereumjs-util": "^7.1.4",
     "source-map-support": "^0.5.19"
   },
   "engines": {
